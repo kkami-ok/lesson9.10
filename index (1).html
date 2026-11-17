@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Ride Tour – Let's Take a Tuk-tuk!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   설정: Apps Script 웹앱 URL을 아래 따옴표 안에 붙여 넣으세요.
+   비워 두면 '오프라인 모드'(현황판 없이 학생 활동만)로 동작합니다.
+   ========================================================= */
+</style>
+<script>
+const API_URL = "";
+</script>
+<style>
+:root{
+  --sun:#ffcc33; --sun-d:#f2a900; --sea:#1fa6b8; --sea-d:#127a88; --ink:#24323d; --sub:#5f6f7a;
+  --paper:#fffaf0; --card:#ffffff; --line:#e7dcc6; --ok:#2db36b; --bad:#e8574b; --sky:#dff4f7; --purple:#7b5cd6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Nanum Gothic",system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-tap-highlight-color:transparent}
+h1,h2,h3,.jua{font-family:"Jua","Nanum Gothic",sans-serif;font-weight:400;margin:0}
+button{font-family:inherit;cursor:pointer;border:none}
+.hidden{display:none!important}
+.wrap{max-width:1040px;margin:0 auto;padding:16px 20px 40px}
+
+/* top bar */
+#topbar{position:sticky;top:0;z-index:20;background:var(--sea);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 18px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#topbar .logo{font-family:Jua;font-size:22px;white-space:nowrap}
+#stagePills{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.pill{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:700}
+.pill.on{background:var(--sun);color:var(--ink)}
+.pill.lock{opacity:.45;cursor:not-allowed}
+.pill.done::after{content:" ✓"}
+#me{font-size:14px;white-space:nowrap}
+#helpBtn{background:#fff;color:var(--sea-d);border-radius:999px;padding:7px 12px;font-weight:800;font-size:14px}
+#helpBtn.wait{background:var(--sun);color:var(--ink);animation:pulse 1.2s infinite}
+#netDot{width:10px;height:10px;border-radius:50%;background:#ccc;display:inline-block}
+#netDot.ok{background:#7CFC8A}#netDot.err{background:#ff8080}
+
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 4px 0 var(--line)}
+.title{display:flex;align-items:center;gap:10px;margin:8px 0 14px}
+.title .num{background:var(--sun);border-radius:12px;padding:4px 12px;font-family:Jua;font-size:22px}
+.title h2{font-size:28px}
+.title .sub{color:var(--sub);font-size:15px}
+.btn{background:var(--sea);color:#fff;border-radius:14px;padding:12px 20px;font-size:18px;font-weight:800;box-shadow:0 4px 0 var(--sea-d);transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--sea-d)}
+.btn.y{background:var(--sun);color:var(--ink);box-shadow:0 4px 0 var(--sun-d)}
+.btn.g{background:#eef2f4;color:var(--ink);box-shadow:0 4px 0 #cdd5da}
+.btn.p{background:var(--purple);box-shadow:0 4px 0 #5a3fb0}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.big{font-size:22px;padding:16px 28px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.center{text-align:center}
+.spacer{flex:1}
+
+/* choices */
+.choices{display:grid;gap:12px;margin-top:14px}
+.choices.c2{grid-template-columns:1fr 1fr}
+.choices.c4{grid-template-columns:repeat(4,1fr)}
+.choice{background:#fff;border:3px solid var(--line);border-radius:16px;padding:14px;font-size:19px;font-weight:700;text-align:left;color:var(--ink);line-height:1.35}
+.choice:hover{border-color:var(--sea)}
+.choice.right{border-color:var(--ok);background:#e9f9f0}
+.choice.wrong{border-color:var(--bad);background:#fdecea;animation:shake .35s}
+.choice.icon{text-align:center;font-size:16px;padding:8px}
+.choice.icon svg{width:100%;height:auto;display:block}
+
+/* bubbles */
+.scene{display:flex;gap:18px;align-items:flex-end;justify-content:center;margin:12px 0;flex-wrap:wrap}
+.who{text-align:center;font-size:15px;color:var(--sub)}
+.who .face{font-size:54px;line-height:1}
+.bubble{position:relative;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:12px 16px;font-size:20px;font-weight:700;max-width:420px;min-width:120px;margin-bottom:30px}
+.bubble::after{content:"";position:absolute;bottom:-14px;left:28px;border:12px solid transparent;border-top-color:var(--ink);border-bottom:0}
+.bubble.blank{border-style:dashed;color:#b5a98f}
+.bubble.npc{background:var(--sky)}
+.ko{color:var(--sub);font-size:16px;margin:4px 0}
+
+/* mic */
+.mic{width:96px;height:96px;border-radius:50%;background:var(--bad);color:#fff;font-size:42px;box-shadow:0 5px 0 #b33a30}
+.mic.rec{animation:pulse 1s infinite;background:#ff6b5e}
+.heard{min-height:28px;font-size:17px;color:var(--sub);margin-top:8px}
+.target{font-size:26px;font-weight:800;margin:10px 0;letter-spacing:.2px}
+.target.blur{filter:blur(7px);cursor:pointer;user-select:none}
+.feedback{font-size:20px;font-weight:800;min-height:30px;margin-top:6px}
+.feedback.ok{color:var(--ok)}.feedback.no{color:var(--bad)}
+
+/* road */
+.road{position:relative;height:120px;margin:10px 0 20px;background:linear-gradient(#cfe9ee 0 60%,#9ad0a0 60%)}
+.road .lane{position:absolute;left:4%;right:4%;top:78px;height:14px;background:#6b6b6b;border-radius:8px}
+.road .dot{position:absolute;top:70px;width:30px;height:30px;border-radius:50%;background:#fff;border:4px solid #888;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.road .dot.done{background:var(--sun);border-color:var(--sun-d)}
+.road .car{position:absolute;top:8px;width:110px;transition:left 1s cubic-bezier(.4,1.6,.6,1);transform:translateX(-50%)}
+
+/* blocks */
+.blocks{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.block{background:var(--sun);border-radius:10px;padding:10px 14px;font-size:20px;font-weight:800;box-shadow:0 3px 0 var(--sun-d);color:var(--ink)}
+.block.used{opacity:.25;pointer-events:none}
+.built{min-height:56px;border:3px dashed var(--line);border-radius:14px;padding:10px;font-size:22px;font-weight:800;text-align:center}
+
+/* guess */
+.viewport{width:100%;max-width:560px;aspect-ratio:200/140;margin:0 auto;overflow:hidden;border-radius:18px;border:3px solid var(--ink);background:#bfe7ef;position:relative}
+.viewport .zoomer{width:100%;height:100%;transition:transform 9s linear}
+.viewport svg{width:100%;height:100%;display:block}
+.timerbar{height:10px;background:#eee;border-radius:6px;overflow:hidden;max-width:560px;margin:10px auto}
+.timerbar div{height:100%;background:var(--sun-d);width:100%}
+
+/* map */
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.station{position:relative;background:#fff;border:3px solid var(--line);border-radius:18px;padding:10px;text-align:center;font-weight:800;font-size:17px;color:var(--ink)}
+.station svg{width:100%;height:auto}
+.station .flag{font-size:13px;color:var(--sub);font-weight:700}
+.station .stamp{position:absolute;top:10px;right:10px;width:74px;height:74px;border:5px solid var(--bad);border-radius:50%;color:var(--bad);font-family:Jua;font-size:18px;display:flex;align-items:center;justify-content:center;transform:rotate(-14deg);background:rgba(255,255,255,.85)}
+.station:hover{border-color:var(--sea)}
+.npcbox{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+.npcbox .art svg{width:100%;height:auto;border-radius:14px;border:2px solid var(--line)}
+.step{font-size:15px;color:var(--sea-d);font-weight:800;margin-bottom:4px}
+.sub-cc{font-size:18px;color:var(--sub);margin-top:4px}
+.flash{position:fixed;inset:0;background:#fff;z-index:90;animation:flash .6s forwards;pointer-events:none}
+.bigstamp{position:fixed;left:50%;top:45%;z-index:91;transform:translate(-50%,-50%) rotate(-14deg) scale(3);opacity:0;width:200px;height:200px;border:10px solid var(--bad);border-radius:50%;color:var(--bad);font-family:Jua;font-size:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);animation:stampIn .5s forwards;pointer-events:none}
+
+/* postcard */
+.postcard{display:grid;grid-template-columns:1fr 1fr;gap:0;border:3px solid var(--ink);border-radius:16px;overflow:hidden;background:#fff;max-width:820px;margin:0 auto}
+.postcard .pic{background:var(--sky);display:flex;align-items:center;justify-content:center}
+.postcard .pic svg{width:100%;height:auto}
+.postcard .txt{padding:20px;font-size:20px;line-height:1.8;border-left:3px dashed var(--line)}
+.postcard input,.postcard select{font-size:19px;font-family:inherit;border:2px solid var(--line);border-radius:10px;padding:4px 8px}
+.postcard select{width:auto;max-width:100%}
+.postcard input{width:100%}
+
+/* login / misc */
+input.inp,select.inp{font-size:20px;padding:10px 12px;border:3px solid var(--line);border-radius:12px;font-family:inherit;width:100%}
+label.l{font-weight:800;display:block;margin:12px 0 6px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:14px 20px;border-radius:14px;font-size:17px;z-index:99;display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.stars{font-size:22px;letter-spacing:2px}
+.waiting svg{width:260px;animation:drive 2.4s ease-in-out infinite alternate}
+.note{background:#fff7da;border:2px solid #f3dd8c;border-radius:12px;padding:10px 14px;font-size:15px;margin-top:12px}
+
+/* teacher */
+.t-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.t-stage{background:#eef2f4;border-radius:12px;padding:10px 6px;font-weight:800;font-size:15px;text-align:center;color:var(--ink)}
+.t-stage.on{background:var(--sun);box-shadow:0 0 0 3px var(--sun-d) inset}
+table.t{width:100%;border-collapse:collapse;font-size:15px;background:#fff}
+table.t th,table.t td{border-bottom:1px solid #eee;padding:8px 6px;text-align:center}
+table.t th{background:#f6f1e4;position:sticky;top:0}
+table.t tr.help td{background:#fff3c4}
+.on-dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:#ccc}
+.on-dot.on{background:var(--ok)}
+.sdots span{display:inline-block;width:14px;height:14px;border-radius:50%;background:#e5e5e5;margin:0 1px}
+.sdots span.y{background:var(--bad)}
+.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:12px 0}
+.kpi div{background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.kpi b{display:block;font-size:26px;font-family:Jua;font-weight:400}
+.kpi small{color:var(--sub)}
+.pcwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.pcmini{background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px;font-size:14px;cursor:pointer}
+.pcmini:hover{border-color:var(--sea)}
+#tvOverlay{position:fixed;inset:0;background:rgba(20,30,40,.92);z-index:80;display:flex;align-items:center;justify-content:center;padding:30px}
+#tvOverlay .postcard{max-width:1100px;transform:scale(1.05)}
+#tvOverlay .postcard .txt{font-size:28px}
+.bigtimer{font-family:Jua;font-size:46px;min-width:150px;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:85;display:flex;align-items:center;justify-content:center}
+.modal .card{max-width:420px}
+
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+@keyframes stampIn{0%{opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(3)}60%{opacity:1;transform:translate(-50%,-50%) rotate(-14deg) scale(.9)}100%{opacity:1;transform:translate(-50%,-50%) rotate(-14deg) scale(1)}}
+@keyframes drive{from{transform:translateX(-40px)}to{transform:translateX(40px)}}
+@media (max-width:760px){.npcbox{grid-template-columns:1fr}.map{grid-template-columns:1fr 1fr}.choices.c4{grid-template-columns:1fr 1fr}.postcard{grid-template-columns:1fr}.kpi,.t-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+
+<div id="topbar" class="hidden">
+  <div class="logo">🛺 World Ride Tour</div>
+  <div id="stagePills"></div>
+  <span id="netDot" title="현황판 연결 상태"></span>
+  <button id="helpBtn">🙋 도와주세요</button>
+  <div id="me"></div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* =========================================================
+   1. 그림 (직접 그린 SVG — 저작권 걱정 없이 공유 가능)
+   ========================================================= */
+const W = (inner, bg) => `<svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">${bg||''}${inner}</svg>`;
+const SKY = '<rect width="200" height="140" fill="#bfe7ef"/><circle cx="170" cy="24" r="12" fill="#ffd54a"/>';
+const GROUND = '<rect y="112" width="200" height="28" fill="#9ccf8f"/>';
+const ROADBG = '<rect y="108" width="200" height="32" fill="#8a8a8a"/><rect y="122" width="200" height="3" fill="#fff" stroke-dasharray="8 8"/>';
+const WATER = '<rect y="100" width="200" height="40" fill="#3b8fd1"/><path d="M0 108 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke="#bfe3ff" stroke-width="2" fill="none"/>';
+const wheel = (x,y,r=10)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#2b2b2b"/><circle cx="${x}" cy="${y}" r="${r*.4}" fill="#bbb"/>`;
+
+const TUK = `
+    <rect x="70" y="28" width="118" height="10" rx="4" fill="#2f6fd6"/>
+    <rect x="76" y="38" width="4" height="40" fill="#555"/><rect x="178" y="38" width="4" height="40" fill="#555"/>
+    <rect x="72" y="74" width="114" height="26" rx="5" fill="#f2c14e"/>
+    <rect x="80" y="62" width="40" height="14" rx="4" fill="#c0392b"/><rect x="132" y="62" width="40" height="14" rx="4" fill="#c0392b"/>
+    <path d="M72 88 L40 88 L28 70" stroke="#333" stroke-width="5" fill="none"/>
+    <rect x="22" y="62" width="18" height="6" rx="3" fill="#333"/>
+    <circle cx="48" cy="78" r="7" fill="#e74c3c"/>
+    ${wheel(34,104)}${wheel(100,104)}${wheel(160,104)}`;
+const ART = {
+  tuktuk: W(TUK, SKY+ROADBG),
+  coco: W(`
+    <path d="M38 102 Q36 30 108 28 Q176 30 172 102 Z" fill="#ffd23f" stroke="#c99a00" stroke-width="3"/>
+    <path d="M70 70 Q74 44 108 42 Q140 44 146 70 Z" fill="#dff4ff" stroke="#c99a00" stroke-width="2"/>
+    <rect x="96" y="20" width="28" height="9" rx="3" fill="#222"/><text x="110" y="27" font-size="7" fill="#ffd23f" text-anchor="middle" font-weight="bold">TAXI</text>
+    ${wheel(60,104)}${wheel(152,104)}`, SKY+ROADBG),
+  gondola: W(`
+    <path d="M20 96 Q100 116 182 88 L186 76 Q172 92 100 98 Q40 98 24 84 Z" fill="#1b1b1b"/>
+    <path d="M184 76 l6 -14 l-3 -2 l-6 14" fill="#c9a227"/>
+    <circle cx="120" cy="46" r="7" fill="#f2c9a0"/><rect x="113" y="38" width="14" height="4" fill="#222"/>
+    <rect x="114" y="53" width="12" height="20" fill="#fff"/><rect x="114" y="57" width="12" height="3" fill="#d33"/><rect x="114" y="63" width="12" height="3" fill="#d33"/>
+    <rect x="114" y="73" width="5" height="20" fill="#222"/><rect x="121" y="73" width="5" height="20" fill="#222"/>
+    <line x1="98" y1="40" x2="150" y2="120" stroke="#7a4a1d" stroke-width="3"/>
+    <rect x="0" y="40" width="40" height="60" fill="#e8a87c"/><rect x="8" y="50" width="8" height="12" fill="#5a3"/><rect x="24" y="50" width="8" height="12" fill="#5a3"/>`, SKY+WATER),
+  schwebe: W(`
+    <rect x="0" y="22" width="200" height="8" fill="#2f7d4a"/>
+    <path d="M20 30 L10 112 M20 30 L30 112 M120 30 L110 112 M120 30 L130 112" stroke="#2f7d4a" stroke-width="4"/>
+    <rect x="58" y="30" width="4" height="16" fill="#555"/><rect x="138" y="30" width="4" height="16" fill="#555"/>
+    <rect x="48" y="44" width="104" height="38" rx="10" fill="#f5f5f5" stroke="#1f5ea8" stroke-width="3"/>
+    <rect x="48" y="68" width="104" height="6" fill="#1f5ea8"/>
+    <rect x="58" y="50" width="16" height="14" fill="#9fd3ff"/><rect x="80" y="50" width="16" height="14" fill="#9fd3ff"/><rect x="102" y="50" width="16" height="14" fill="#9fd3ff"/><rect x="124" y="50" width="16" height="14" fill="#9fd3ff"/>`, SKY+WATER),
+  bus: W(`
+    <rect x="28" y="40" width="146" height="62" rx="10" fill="#e64a3c"/>
+    <rect x="38" y="50" width="22" height="20" rx="3" fill="#dff4ff"/><rect x="66" y="50" width="22" height="20" rx="3" fill="#dff4ff"/><rect x="94" y="50" width="22" height="20" rx="3" fill="#dff4ff"/><rect x="122" y="50" width="22" height="20" rx="3" fill="#dff4ff"/><rect x="150" y="50" width="18" height="34" rx="3" fill="#dff4ff"/>
+    <rect x="28" y="80" width="146" height="5" fill="#fff"/>${wheel(60,104)}${wheel(146,104)}`, SKY+ROADBG),
+  subway: W(`
+    <rect x="16" y="44" width="170" height="56" rx="12" fill="#d9dee3"/>
+    <rect x="16" y="78" width="170" height="8" fill="#2a9d8f"/>
+    <rect x="28" y="54" width="22" height="18" rx="3" fill="#24323d"/><rect x="58" y="54" width="22" height="18" rx="3" fill="#24323d"/><rect x="88" y="54" width="14" height="30" rx="2" fill="#9aa5ad"/><rect x="110" y="54" width="22" height="18" rx="3" fill="#24323d"/><rect x="140" y="54" width="22" height="18" rx="3" fill="#24323d"/>
+    <rect x="0" y="104" width="200" height="6" fill="#555"/>${wheel(44,104,7)}${wheel(156,104,7)}`, '<rect width="200" height="140" fill="#3d4652"/><rect y="20" width="200" height="6" fill="#ffd54a"/>'),
+  camel: W(`
+    <path d="M50 76 Q62 40 80 66 Q94 38 112 70 L130 70 Q136 50 148 46 L158 44 Q166 46 160 54 L150 56 Q146 70 140 80 L50 84 Z" fill="#c48a4a"/>
+    <rect x="56" y="80" width="7" height="32" fill="#a8733b"/><rect x="74" y="80" width="7" height="32" fill="#a8733b"/><rect x="110" y="80" width="7" height="32" fill="#a8733b"/><rect x="128" y="78" width="7" height="34" fill="#a8733b"/>
+    <circle cx="156" cy="48" r="1.8" fill="#222"/><path d="M70 60 l12 -4 l10 6" fill="#d33"/>`, SKY+'<rect y="110" width="200" height="30" fill="#e8c27a"/>'),
+  rickshaw: W(`
+    <path d="M40 46 Q42 34 60 34 L150 34 Q170 34 172 52 L172 98 L40 98 Z" fill="#2e9e4f"/>
+    <path d="M40 46 Q42 34 60 34 L150 34 Q170 34 172 52 L40 52 Z" fill="#ffd23f"/>
+    <rect x="52" y="56" width="40" height="28" rx="4" fill="#dff4ff"/><rect x="100" y="56" width="40" height="40" rx="2" fill="#24323d" opacity=".25"/>
+    ${wheel(58,104)}${wheel(150,104)}`, SKY+ROADBG),
+  ferry: W(`
+    <path d="M20 88 L186 88 L172 110 L34 110 Z" fill="#fff" stroke="#24323d" stroke-width="2"/>
+    <rect x="50" y="66" width="110" height="22" rx="4" fill="#f5f5f5" stroke="#24323d" stroke-width="2"/>
+    <rect x="70" y="52" width="60" height="16" rx="3" fill="#ffd23f" stroke="#24323d" stroke-width="2"/>
+    <circle cx="66" cy="77" r="4" fill="#9fd3ff"/><circle cx="84" cy="77" r="4" fill="#9fd3ff"/><circle cx="102" cy="77" r="4" fill="#9fd3ff"/><circle cx="120" cy="77" r="4" fill="#9fd3ff"/><circle cx="138" cy="77" r="4" fill="#9fd3ff"/>
+    <rect x="34" y="98" width="140" height="4" fill="#127a88"/>`, SKY+WATER),
+  /* landmarks */
+  angkor: W(`
+    <rect x="20" y="92" width="160" height="20" fill="#9c7b55"/>
+    <path d="M40 92 Q42 54 52 46 Q62 54 64 92 Z" fill="#8a6a45"/><path d="M136 92 Q138 54 148 46 Q158 54 160 92 Z" fill="#8a6a45"/>
+    <path d="M78 92 Q80 34 100 18 Q120 34 122 92 Z" fill="#7d5e3c"/>
+    <path d="M86 70 h28 M84 80 h32 M90 56 h20 M93 44 h14" stroke="#5c4329" stroke-width="2"/>`, SKY+GROUND),
+  eiffel: W(`
+    <path d="M100 10 L106 40 L114 70 L132 112 L118 112 L108 86 L92 86 L82 112 L68 112 L86 70 L94 40 Z" fill="#7a6a58"/>
+    <path d="M86 70 h28 M94 40 h12" stroke="#4d4236" stroke-width="3"/><path d="M90 104 Q100 88 110 104" fill="#bfe7ef"/>`, SKY+GROUND),
+  gyeongbok: W(`
+    <rect x="34" y="62" width="132" height="44" fill="#f1e3c8"/>
+    <rect x="42" y="62" width="6" height="44" fill="#b83a2e"/><rect x="72" y="62" width="6" height="44" fill="#b83a2e"/><rect x="122" y="62" width="6" height="44" fill="#b83a2e"/><rect x="152" y="62" width="6" height="44" fill="#b83a2e"/>
+    <path d="M14 58 Q40 64 100 40 Q160 64 186 58 L174 66 L26 66 Z" fill="#3a4a3f"/>
+    <path d="M40 42 Q70 44 100 28 Q130 44 160 42 L150 48 L50 48 Z" fill="#3a4a3f"/><rect x="50" y="48" width="100" height="10" fill="#2e8b6a"/>
+    <rect x="88" y="80" width="24" height="26" rx="10" fill="#5c3b22"/>`, SKY+GROUND),
+  pyramid: W(`
+    <path d="M30 112 L100 26 L170 112 Z" fill="#e0b56a"/><path d="M100 26 L170 112 L120 112 Z" fill="#c7974c"/>
+    <path d="M150 112 L176 80 L200 112 Z" fill="#d9ab5d"/>`, SKY+'<rect y="110" width="200" height="30" fill="#e8c27a"/>'),
+  taj: W(`
+    <rect x="50" y="64" width="100" height="46" fill="#fbfbf6" stroke="#cfcab8"/>
+    <path d="M70 64 Q70 26 100 20 Q130 26 130 64 Z" fill="#fbfbf6" stroke="#cfcab8"/><rect x="98" y="10" width="4" height="12" fill="#c9a227"/>
+    <path d="M88 110 L88 82 Q100 70 112 82 L112 110 Z" fill="#d8e6ef"/>
+    <rect x="28" y="44" width="8" height="66" fill="#fbfbf6" stroke="#cfcab8"/><rect x="164" y="44" width="8" height="66" fill="#fbfbf6" stroke="#cfcab8"/>
+    <circle cx="32" cy="42" r="6" fill="#fbfbf6" stroke="#cfcab8"/><circle cx="168" cy="42" r="6" fill="#fbfbf6" stroke="#cfcab8"/>`, SKY+GROUND),
+  opera: W(`
+    <rect x="20" y="92" width="160" height="10" fill="#d8c8a8"/>
+    <path d="M40 92 Q46 52 74 40 Q72 70 80 92 Z" fill="#fff" stroke="#cfd6db" stroke-width="2"/>
+    <path d="M74 92 Q86 40 118 26 Q112 64 124 92 Z" fill="#fff" stroke="#cfd6db" stroke-width="2"/>
+    <path d="M118 92 Q130 54 160 46 Q154 74 164 92 Z" fill="#fff" stroke="#cfd6db" stroke-width="2"/>`, SKY+WATER)
+};
+
+/* =========================================================
+   2. 수업 데이터
+   ========================================================= */
+// {중괄호} 안 단어는 화면에는 보이지만 음성 인식 채점에서는 제외(고유명사 인식 오류 방지)
+const GUESS = [
+  {art:'coco', focus:'52% 30%', answer:0, opts:['Coco taxi – Cuba 🇨🇺','Tuk-tuk – Cambodia 🇰🇭','Gondola – Italy 🇮🇹','Bus – France 🇫🇷'],
+   fact:'쿠바 아바나의 <b>코코택시</b>예요. 코코넛처럼 둥근 노란 택시랍니다.'},
+  {art:'gondola', focus:'60% 40%', answer:2, opts:['Ferry – Australia 🇦🇺','Coco taxi – Cuba 🇨🇺','Gondola – Italy 🇮🇹','Camel – Egypt 🇪🇬'],
+   fact:'이탈리아 베네치아의 <b>곤돌라</b>예요. 길 대신 물길이 많은 도시라서 배를 타요.'},
+  {art:'schwebe', focus:'50% 45%', answer:1, opts:['Subway – Korea 🇰🇷','Hanging train – Germany 🇩🇪','Bus – France 🇫🇷','Ferry – Australia 🇦🇺'],
+   fact:'독일 부퍼탈의 <b>공중 열차(Schwebebahn)</b>예요. 강 위 레일에 매달려 달린 지 100년이 넘었어요.'},
+  {art:'tuktuk', focus:'25% 70%', answer:3, opts:['Auto-rickshaw – India 🇮🇳','Coco taxi – Cuba 🇨🇺','Hanging train – Germany 🇩🇪','Tuk-tuk – Cambodia 🇰🇭'],
+   fact:'캄보디아의 <b>툭툭</b>이에요! 오토바이가 뒤의 객차를 끄는 모양이라 문이 없어요. 오늘 이야기의 주인공이에요.'}
+];
+
+const LINES = [
+  {ko:'② 길을 잃은 가족. 아이가 호텔 직원에게 물어요.', a:{who:'🧒',name:'Boy'}, b:{who:'🧑‍💼',name:'Hotel staff'},
+   blank:'a', aText:null, bText:'Please take a tuk-tuk and get off at Angkor Wat.',
+   opts:['Excuse me, how can I get to {Angkor Wat}?','Can I take pictures here?','Who built {Angkor Wat}?'], answer:0},
+  {ko:'② 직원이 가는 방법을 알려 줘요.', a:{who:'🧒',name:'Boy'}, b:{who:'🧑‍💼',name:'Hotel staff'},
+   blank:'b', aText:'Excuse me, how can I get to Angkor Wat?', bText:null,
+   opts:['Yes, you can.','Please take a tuk-tuk and get off at {Angkor Wat}.','It was so much fun.'], answer:1},
+  {ko:'③ "툭툭이 뭐예요?" 기사님이 설명해요.', a:{who:'🧒',name:'Boy'}, b:{who:'👨🏽‍✈️',name:'Driver'},
+   blank:'b', aText:"What's a tuk-tuk?", bText:null,
+   opts:["It's a small taxi. It doesn't have any doors.","It's a big bus. It has many windows.","It's a train. It goes under the ground."], answer:0},
+  {ko:'⑤ 앙코르와트 앞. 엄마가 누가 지었는지 물어요.', a:{who:'👩',name:'Mom'}, b:{who:'👨',name:'Dad'},
+   blank:'b', aText:'Who built Angkor Wat?', bText:null,
+   opts:['Please take a bus.','{King Suryavarman II} built it.','Yes, you can.'], answer:1},
+  {ko:'⑦ 아이가 사진을 찍고 싶어요.', a:{who:'🧒',name:'Boy'}, b:{who:'👩',name:'Mom'},
+   blank:'a', aText:null, bText:'Yes, you can.',
+   opts:['How was your day?','Can I take pictures here?','Excuse me, who built it?'], answer:1},
+  {ko:'⑨ 하루를 마치고 툭툭 안. 기사님이 물어요.', a:{who:'👨🏽‍✈️',name:'Driver'}, b:{who:'🧒',name:'Boy'},
+   blank:'b', aText:'How was your day?', bText:null,
+   opts:['It was so much fun.','Yes, I did.',"It doesn't have any doors."], answer:0}
+];
+
+const MISSIONS = [
+  {ko:'앙코르와트 가는 길을 물어보세요.', t:'Excuse me, how can I get to {Angkor Wat}?', art:'angkor'},
+  {ko:'"툭툭을 타고 앙코르와트에서 내리세요."라고 안내하세요.', t:'Please take a tuk-tuk and get off at {Angkor Wat}.', art:'tuktuk'},
+  {ko:'누가 지었는지 물어보세요.', t:'Who built it?', art:'angkor'},
+  {ko:'여기서 사진을 찍어도 되는지 물어보세요.', t:'Can I take pictures here?', art:'angkor'},
+  {ko:'"응, 찍어도 돼."라고 허락해 주세요.', t:'Yes, you can.', art:'angkor'},
+  {ko:'"오늘 어땠니?"에 대답하세요.', t:'It was so much fun.', art:'tuktuk'}
+];
+
+// 사진 촬영 Yes/No는 수업용 게임 규칙(실제 현장 규정 아님)
+const STATIONS = [
+  {id:'angkor', place:'Angkor Wat', placeSay:'Angkor Wat', flag:'🇰🇭 Cambodia', ride:'tuktuk', rideName:'tuk-tuk', art:'a', stop:'Angkor Wat',
+   builder:'King Suryavarman II', builderSay:'King Suryavarman the Second', photo:true,
+   ko:'12세기 수리야바르만 2세 때 지어진 사원이에요. 캄보디아 국기에도 그려져 있어요.'},
+  {id:'eiffel', place:'the Eiffel Tower', placeSay:'the Eiffel Tower', flag:'🇫🇷 France', ride:'bus', rideName:'bus', art:'a', stop:'the Eiffel Tower',
+   builder:'Gustave Eiffel', builderSay:'Gustave Eiffel', photo:true,
+   ko:'1889년 파리 만국박람회 때 세워졌어요. 에펠의 회사가 지었답니다.'},
+  {id:'gyeongbok', place:'Gyeongbokgung', placeSay:'Gyeongbokgung', flag:'🇰🇷 Korea', ride:'subway', rideName:'subway', art:'the', stop:'Gyeongbokgung Station',
+   builder:'King Taejo', builderSay:'King Taejo', photo:true,
+   ko:'조선을 세운 태조가 1395년에 지은 궁궐이에요.'},
+  {id:'pyramid', place:'the Great Pyramid', placeSay:'the Great Pyramid', flag:'🇪🇬 Egypt', ride:'camel', rideName:'camel', art:'a', stop:'the Great Pyramid',
+   builder:'King Khufu', builderSay:'King Khufu', photo:false,
+   ko:'약 4,500년 전 쿠푸왕의 무덤으로 지어졌어요.'},
+  {id:'taj', place:'the Taj Mahal', placeSay:'the Taj Mahal', flag:'🇮🇳 India', ride:'rickshaw', rideName:'auto-rickshaw', art:'an', stop:'the Taj Mahal',
+   builder:'Shah Jahan', builderSay:'Shah Jahan', photo:false,
+   ko:'샤자한 황제가 세상을 떠난 왕비를 기리며 짓게 했어요.'},
+  {id:'opera', place:'the Sydney Opera House', placeSay:'the Sydney Opera House', flag:'🇦🇺 Australia', ride:'ferry', rideName:'ferry', art:'a', stop:'Circular Quay',
+   builder:'Jørn Utzon', builderSay:'Yorn Utzon', photo:true,
+   ko:'덴마크 건축가 예른 웃손이 설계했어요. 조개껍데기 같은 지붕이 특징이에요.'}
+];
+const RIDE_KO = {tuktuk:'툭툭',bus:'버스',subway:'지하철',camel:'낙타',rickshaw:'오토릭샤',ferry:'페리(배)'};
+
+const STAGES = [
+  {n:1, name:'Guess the Ride', ko:'어느 나라 탈것일까?'},
+  {n:2, name:'Line Detective', ko:'이야기 속 말풍선 찾기'},
+  {n:3, name:'Speak & Ride', ko:'말해서 툭툭 운전하기'},
+  {n:4, name:'World Ride Tour', ko:'세계 여행 미션'},
+  {n:5, name:'Trip Postcard', ko:'여행 엽서 쓰기'}
+];
+
+/* =========================================================
+   3. 공통 도구: 저장, 음성, 소리
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const show = t => t.replace(/[{}]/g,'');            // 화면용
+const say = t => t.replace(/[{}]/g,'').replace(/\bII\b/,'the Second');
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+// --- TTS ---
+let VOICE = null;
+function pickVoice(){
+  if(!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices();
+  VOICE = vs.find(v=>/en-US/i.test(v.lang) && /Google/i.test(v.name)) || vs.find(v=>/en-US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, opt={}){
+  return new Promise(res=>{
+    if(!('speechSynthesis' in window)){ res(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(say(text));
+    u.lang='en-US'; if(VOICE) u.voice=VOICE;
+    u.rate = opt.rate || 0.88; u.pitch = opt.pitch || 1;
+    let done=false; const fin=()=>{ if(!done){done=true;res();} };
+    u.onend=fin; u.onerror=fin; setTimeout(fin, 9000);
+    speechSynthesis.speak(u);
+  });
+}
+
+// --- 효과음 (WebAudio) ---
+let AC=null;
+function beep(type){
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const now = AC.currentTime;
+    const seq = {
+      ok:[[660,0,.12],[880,.12,.18]], no:[[220,0,.25]], stamp:[[140,0,.08],[90,.05,.15]],
+      horn:[[440,0,.25],[440,.32,.35]], win:[[523,0,.12],[659,.12,.12],[784,.24,.12],[1046,.36,.3]],
+      click:[[1200,0,.04]]
+    }[type] || [[600,0,.1]];
+    seq.forEach(([f,t,d])=>{
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.type = type==='horn'?'square':(type==='stamp'?'triangle':'sine'); o.frequency.value=f;
+      g.gain.setValueAtTime(.0001,now+t); g.gain.exponentialRampToValueAtTime(type==='horn'?.25:.3,now+t+.01); g.gain.exponentialRampToValueAtTime(.0001,now+t+d);
+      o.connect(g).connect(AC.destination); o.start(now+t); o.stop(now+t+d+.05);
+    });
+  }catch(e){}
+}
+
+// --- 음성 인식 ---
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SR_OK = !!SR;
+function listen(){
+  return new Promise(res=>{
+    if(!SR_OK){ res({err:'unsupported'}); return; }
+    let r; try{ r = new SR(); }catch(e){ res({err:'unsupported'}); return; }
+    r.lang='en-US'; r.interimResults=false; r.maxAlternatives=5; r.continuous=false;
+    let got=null, done=false;
+    const fin = v => { if(!done){ done=true; res(v); } };
+    r.onresult = e => { got = Array.from(e.results[0]).map(a=>a.transcript); };
+    r.onerror = e => fin({err:e.error});
+    r.onend = () => fin(got ? {alts:got} : {err:'no-speech'});
+    try{ r.start(); }catch(e){ fin({err:'busy'}); }
+    setTimeout(()=>{ try{r.stop();}catch(e){} }, 7000);
+  });
+}
+const norm = s => s.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const ALIAS = {pictures:['picture','pics'], cant:['cannot','can t'], tuktuk:['tuk','took','tok'], its:['it is'], doesnt:['does not']};
+function scoreSpeech(target, alts){
+  const core = norm(target.replace(/\{[^}]*\}/g,' ').replace(/tuk-tuk/gi,'tuktuk')).split(' ').filter(Boolean);
+  let best = 0, bestAlt = alts[0]||'';
+  alts.forEach(a=>{
+    const words = ' '+norm(a).replace(/tuk tuk|took took|tuk-tuk/g,'tuktuk')+' ';
+    let hit = 0;
+    core.forEach(w=>{ if(words.includes(' '+w+' ') || (ALIAS[w]||[]).some(x=>words.includes(' '+x+' '))) hit++; });
+    const sc = core.length ? hit/core.length : 0;
+    if(sc>best){ best=sc; bestAlt=a; }
+  });
+  return {score:best, heard:bestAlt};
+}
+const SR_MSG = {
+  'not-allowed':'마이크 사용이 막혀 있어요. 주소창 왼쪽 🔒을 눌러 마이크를 허용해 주세요.',
+  'unsupported':'이 브라우저는 음성 인식을 지원하지 않아요.',
+  'network':'인터넷 연결이 불안정해서 음성 인식이 안 됐어요.',
+  'no-speech':'소리가 안 들렸어요. 마이크 가까이에서 또박또박!',
+  'audio-capture':'마이크를 찾을 수 없어요.',
+  'aborted':'다시 눌러 주세요.', 'busy':'잠깐 기다렸다가 다시 눌러 주세요.'
+};
+
+// 공통 말하기 위젯: 성공 시 'mic', 대체 수단 사용 시 'alt' 반환
+function speakTask(host, target, {failLimit=2, onAlt, hide=false}={}){
+  return new Promise(resolve=>{
+    let fails=0;
+    host.innerHTML = `
+      <div class="target ${hide?'blur':''}" title="눌러서 보기">${esc(show(target))}</div>
+      <div class="row" style="justify-content:center;gap:18px;margin-top:6px">
+        <button class="btn g" data-k="listen">🔊 들어 보기</button>
+        <button class="mic" data-k="mic">🎤</button>
+        <button class="btn g hidden" data-k="alt">🧩 다른 방법</button>
+      </div>
+      <div class="heard center"></div><div class="feedback center"></div>`;
+    const tg=host.querySelector('.target'), heard=host.querySelector('.heard'), fb=host.querySelector('.feedback'),
+          mic=host.querySelector('[data-k=mic]'), alt=host.querySelector('[data-k=alt]');
+    tg.onclick=()=>tg.classList.remove('blur');
+    host.querySelector('[data-k=listen]').onclick=()=>speak(target);
+    alt.onclick=()=>{ onAlt ? onAlt(()=>resolve('alt')) : resolve('alt'); };
+    if(!SR_OK){ alt.classList.remove('hidden'); fb.className='feedback no center'; fb.textContent=SR_MSG.unsupported+' 🧩 다른 방법으로 해 보세요.'; mic.disabled=true; mic.style.opacity=.3; }
+    mic.onclick=async()=>{
+      if(mic.classList.contains('rec')) return;
+      window.speechSynthesis && speechSynthesis.cancel();
+      mic.classList.add('rec'); heard.textContent='듣고 있어요… 말해 보세요!'; fb.textContent='';
+      const r = await listen(); mic.classList.remove('rec');
+      if(r.err){ heard.textContent=''; fb.className='feedback no center'; fb.textContent=SR_MSG[r.err]||('음성 인식 오류: '+r.err); fails++; }
+      else{
+        const {score,heard:h}=scoreSpeech(target, r.alts);
+        heard.textContent='내가 말한 문장: "'+h+'"';
+        if(score>=0.7){ fb.className='feedback ok center'; fb.textContent='👍 Great! 잘 들렸어요!'; beep('ok'); S.speakOk=(S.speakOk||0)+1; save(); await sleep(700); resolve('mic'); return; }
+        fails++; fb.className='feedback no center'; fb.textContent= fails>=failLimit ? '괜찮아요! 한 번 더 하거나 🧩 다른 방법을 써도 돼요.' : '조금만 더! 🔊로 듣고 다시 말해 봐요.'; beep('no');
+      }
+      if(fails>=failLimit) alt.classList.remove('hidden');
+    };
+  });
+}
+
+// 낱말 블록 맞추기 (대체 수단)
+function blockTask(host, target){
+  return new Promise(resolve=>{
+    const words = show(target).split(' ');
+    let built=[];
+    host.innerHTML = `<div class="ko center">낱말을 순서대로 눌러 문장을 만들어요.</div><div class="built"></div><div class="blocks"></div>
+      <div class="row" style="justify-content:center"><button class="btn g" data-k="undo">↩ 지우기</button></div><div class="feedback center"></div>`;
+    const bl=host.querySelector('.blocks'), bt=host.querySelector('.built'), fb=host.querySelector('.feedback');
+    shuffle(words.map((w,i)=>({w,i}))).forEach(o=>{
+      const b=document.createElement('button'); b.className='block'; b.textContent=o.w;
+      b.onclick=()=>{ built.push({o,b}); b.classList.add('used'); render(); check(); }; bl.appendChild(b);
+    });
+    host.querySelector('[data-k=undo]').onclick=()=>{ const x=built.pop(); if(x) x.b.classList.remove('used'); render(); };
+    function render(){ bt.textContent = built.map(x=>x.o.w).join(' '); }
+    async function check(){
+      if(built.length<words.length) return;
+      if(built.map(x=>x.o.w).join(' ')===words.join(' ')){ fb.className='feedback ok center'; fb.textContent='👍 완성!'; beep('ok'); speak(target); await sleep(900); resolve(); }
+      else{ fb.className='feedback no center'; fb.textContent='순서가 조금 달라요. ↩로 고쳐 봐요.'; beep('no'); }
+    }
+  });
+}
+
+function toast(msg, btnText, onBtn, ms=5000){
+  const t=document.createElement('div'); t.className='toast'; t.innerHTML=`<span>${msg}</span>`;
+  if(btnText){ const b=document.createElement('button'); b.className='btn y'; b.style.padding='6px 12px'; b.style.fontSize='15px'; b.textContent=btnText; b.onclick=()=>{t.remove();onBtn();}; t.appendChild(b); }
+  document.body.appendChild(t); setTimeout(()=>t.remove(), ms);
+}
+function dialog(html, buttons){
+  return new Promise(res=>{
+    const m=document.createElement('div'); m.className='modal';
+    m.innerHTML=`<div class="card"><div style="font-size:18px;line-height:1.6">${html}</div><div class="row" style="justify-content:flex-end;margin-top:16px"></div></div>`;
+    const row=m.querySelector('.row');
+    buttons.forEach(([label,val,cls])=>{ const b=document.createElement('button'); b.className='btn '+(cls||''); b.textContent=label; b.onclick=()=>{m.remove();res(val);}; row.appendChild(b); });
+    document.body.appendChild(m);
+  });
+}
+
+/* =========================================================
+   4. 서버 통신 (Apps Script)
+   ========================================================= */
+const ONLINE = !!API_URL;
+async function api(method, params, body){
+  if(!ONLINE) return null;
+  try{
+    let res;
+    if(method==='GET'){ res = await fetch(API_URL+'?'+new URLSearchParams(params), {cache:'no-store'}); }
+    else { res = await fetch(API_URL, {method:'POST', body:JSON.stringify(body)}); }
+    const j = await res.json(); setNet(true); return j;
+  }catch(e){ setNet(false); return null; }
+}
+function setNet(ok){ const d=$('#netDot'); if(d){ d.className = ok?'ok':'err'; d.title = ok?'현황판 연결됨':'현황판 연결 끊김 (활동은 계속돼요)'; } }
+
+/* =========================================================
+   5. 학생 상태
+   ========================================================= */
+let S = null;          // 학생 상태
+let ALLOWED = ONLINE ? 0 : 5;   // 교사가 열어 준 단계
+let CUR = 0;           // 지금 보고 있는 단계
+let dirty = false;
+const keyOf = (c,n)=>`wrt_${c}_${n}`;
+function save(){ if(!S) return; S.cur=CUR; store.set(keyOf(S.cls,S.num), S); store.set('wrt_last', {cls:S.cls,num:S.num}); dirty=true; }
+function newState(cls,num,name){ return {cls,num,name,s1:{done:false,score:0,right:0},s2:{done:false,right:0,idx:0},s3:{done:false,idx:0,stars:0},s4:{stamps:[],photos:[],driver:0},s5:{done:false,pc:null},help:0,speakOk:0,cur:0}; }
+function stageDone(n){ if(!S) return false; return n===1?S.s1.done : n===2?S.s2.done : n===3?S.s3.done : n===4?S.s4.stamps.length>=6 : S.s5.done; }
+
+async function syncLoop(){
+  if(!ONLINE || !S) return;
+  if(dirty){
+    dirty=false;
+    const r = await api('POST',null,{action:'beat', key:`${S.cls}-${S.num}`, cls:S.cls, num:S.num, name:S.name, cur:CUR, data:S});
+    if(r && !r.error) applyServer(r); else dirty = true;
+  } else {
+    const r = await api('GET',{action:'config', cls:S.cls, key:`${S.cls}-${S.num}`});
+    if(r && !r.error) applyServer(r);
+  }
+}
+let lastBeat = 0;
+setInterval(()=>{ if(!S) return; const now=Date.now(); if(dirty || now-lastBeat>7000){ lastBeat=now; syncLoop(); } }, 1500);
+setInterval(()=>{ if(S && ONLINE) dirty=true; }, 25000); // 접속 표시용
+
+function applyServer(r){
+  if(typeof r.stage==='number'){
+    const prev = ALLOWED; ALLOWED = r.stage;
+    if(r.stage!==prev){
+      renderPills();
+      if(r.stage>prev && r.stage>0){
+        if(CUR===0 || stageDone(CUR)) go(r.stage);
+        else toast(`🔓 ${r.stage}단계가 열렸어요!`, '이동', ()=>go(r.stage), 8000);
+      }
+      if(CUR>ALLOWED){ go(ALLOWED); }
+    }
+  }
+  if(r.ack && S.help && r.ack>=S.help){ S.help=0; save(); renderHelp(); toast('👩‍🏫 선생님이 확인했어요. 곧 갈게요!'); }
+}
+
+/* =========================================================
+   6. 화면: 로그인 / 대기 / 공통 틀
+   ========================================================= */
+function renderLogin(){
+  $('#topbar').classList.add('hidden');
+  const last = store.get('wrt_last', null);
+  app.innerHTML = `
+  <div style="max-width:520px;margin:30px auto">
+    <div class="center" style="margin-bottom:10px"><div style="width:240px;margin:0 auto">${ART.tuktuk}</div></div>
+    <h1 class="center" style="font-size:38px">World Ride Tour</h1>
+    <p class="center ko" style="font-size:18px">툭툭을 타고 세계 여행을 떠나요!</p>
+    <div class="card" style="margin-top:16px">
+      <label class="l">우리 반</label>
+      <select class="inp" id="lgCls">${[1,2,3,4,5,6,7,8].map(c=>`<option value="6-${c}">6학년 ${c}반</option>`).join('')}</select>
+      <label class="l">번호</label>
+      <select class="inp" id="lgNum">${Array.from({length:32},(_,i)=>`<option>${i+1}</option>`).join('')}</select>
+      <label class="l">여권에 쓸 이름 (영어 이름이나 별명도 좋아요)</label>
+      <input class="inp" id="lgName" maxlength="12" placeholder="예: Minjun">
+      <div class="row" style="margin-top:18px"><span class="spacer"></span><button class="btn big y" id="lgGo">여권 만들기 ✈️</button></div>
+      <div class="note">🎧 이어폰을 꽂아 주세요. 처음 🎤를 누르면 마이크 허용 창이 떠요 → <b>허용</b>을 눌러요.</div>
+    </div>
+    <p class="center" style="margin-top:18px"><a href="#teacher" style="color:var(--sub);font-size:14px">교사용 현황판</a></p>
+  </div>`;
+  if(last){ $('#lgCls').value=last.cls; $('#lgNum').value=last.num; const st=store.get(keyOf(last.cls,last.num),null); if(st) $('#lgName').value=st.name; }
+  $('#lgGo').onclick = async ()=>{
+    beep('click');
+    const cls=$('#lgCls').value, num=+$('#lgNum').value, name=$('#lgName').value.trim();
+    if(!name){ $('#lgName').focus(); $('#lgName').style.borderColor='var(--bad)'; return; }
+    let st = store.get(keyOf(cls,num), null);
+    if(!st && ONLINE){ const r = await api('GET',{action:'get', key:`${cls}-${num}`}); if(r && r.data) st = r.data; }
+    S = st || newState(cls,num,name); S.name=name; save();
+    // 음성 엔진 준비(첫 터치에서 활성화)
+    if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }
+    if(ONLINE){ const r = await api('GET',{action:'config', cls, key:`${cls}-${num}`}); if(r && typeof r.stage==='number') ALLOWED=r.stage; }
+    startStudent();
+  };
+}
+
+function startStudent(){
+  $('#topbar').classList.remove('hidden');
+  $('#me').textContent = `${S.cls} · ${S.num}번 ${S.name}`;
+  if(!ONLINE) $('#netDot').classList.add('hidden');
+  renderPills(); renderHelp();
+  const target = ALLOWED===0 ? 0 : Math.min(Math.max(S.cur||1,1), ALLOWED);
+  go(target);
+}
+function renderPills(){
+  const p=$('#stagePills'); if(!p) return;
+  p.innerHTML = STAGES.map(s=>`<button class="pill ${s.n===CUR?'on':''} ${s.n>ALLOWED?'lock':''} ${stageDone(s.n)?'done':''}" data-n="${s.n}">${s.n>ALLOWED?'🔒 ':''}${s.n}. ${s.name}</button>`).join('');
+  p.querySelectorAll('.pill').forEach(b=>b.onclick=()=>{ const n=+b.dataset.n; if(n<=ALLOWED) go(n); else toast('🔒 선생님이 아직 열지 않았어요.'); });
+}
+function renderHelp(){
+  const b=$('#helpBtn'); if(!b) return;
+  b.classList.toggle('wait', !!S.help); b.textContent = S.help ? '🙋 기다리는 중…' : '🙋 도와주세요';
+  b.onclick = ()=>{ S.help = S.help ? 0 : Date.now(); save(); renderHelp(); if(S.help) toast(ONLINE?'선생님 화면에 알렸어요!':'손을 들어 선생님을 불러요 🙋'); };
+}
+function go(n){
+  window.speechSynthesis && speechSynthesis.cancel();
+  CUR = n; save(); renderPills(); window.scrollTo(0,0);
+  if(n===0) return renderWaiting();
+  [null,stage1,stage2,stage3,stage4,stage5][n]();
+}
+function header(n){
+  const s=STAGES[n-1];
+  return `<div class="title"><span class="num">${n}</span><h2>${s.name}</h2><span class="sub">${s.ko}</span></div>`;
+}
+function nextBtn(n){
+  if(n>=5) return '';
+  const open = n+1<=ALLOWED;
+  return `<div class="row" style="margin-top:18px"><span class="spacer"></span>${open?`<button class="btn big y" onclick="go(${n+1})">다음 단계로 ➜</button>`:`<span class="ko">🚦 선생님이 다음 단계를 열어 줄 때까지 기다려요.</span>`}</div>`;
+}
+function renderWaiting(){
+  app.innerHTML = `<div class="center waiting" style="margin-top:60px">${ART.tuktuk}<h2 style="font-size:32px;margin-top:20px">출발 준비 완료!</h2>
+  <p class="ko" style="font-size:19px">선생님이 출발 신호를 주면 자동으로 시작해요.<br>그동안 이어폰을 꽂고 🔊 소리를 확인해 볼까요?</p>
+  <button class="btn g" onclick="speak('Hello! Let\\'s take a tuk-tuk!')">🔊 소리 확인</button></div>`;
+}
+
+/* =========================================================
+   7. 1단계 Guess the Ride
+   ========================================================= */
+function stage1(){
+  let i=0, score=0, right=0, t0=0, timer=null;
+  const intro = ()=>{
+    app.innerHTML = header(1)+`<div class="card center">
+      <p style="font-size:20px">그림이 점점 작아지면서 전체가 보여요.<br><b>빨리 맞힐수록 점수가 높아요!</b></p>
+      ${S.s1.done?`<p class="ko">지난 기록: ${S.s1.right}/4 정답 · ${S.s1.score}점</p>`:''}
+      <button class="btn big y" id="g0">${S.s1.done?'다시 도전':'시작!'}</button></div>`+(S.s1.done?nextBtn(1):'');
+    $('#g0').onclick=()=>{ beep('click'); q(); };
+  };
+  const q = ()=>{
+    const g=GUESS[i];
+    app.innerHTML = header(1)+`<div class="card">
+      <div class="row"><b>문제 ${i+1} / ${GUESS.length}</b><span class="spacer"></span><span>점수 <b id="gs">${score}</b></span></div>
+      <p class="center" style="font-size:20px;margin:8px 0">What's this ride? Where is it?</p>
+      <div class="viewport"><div class="zoomer" id="zm" style="transform:scale(4.5);transform-origin:${g.focus}">${ART[g.art]}</div></div>
+      <div class="timerbar"><div id="tb"></div></div>
+      <div class="choices c2" id="ch"></div><div id="fact"></div></div>`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ $('#zm').style.transform='scale(1)'; }));
+    const tb=$('#tb'); t0=Date.now();
+    timer=setInterval(()=>{ const p=Math.max(0,1-(Date.now()-t0)/10000); tb.style.width=(p*100)+'%'; },100);
+    g.opts.forEach((o,k)=>{
+      const b=document.createElement('button'); b.className='choice'; b.textContent=o;
+      b.onclick=()=>{
+        clearInterval(timer); $('#zm').style.transition='transform .4s'; $('#zm').style.transform='scale(1)';
+        const all=[...$('#ch').children]; all.forEach(x=>x.disabled=true);
+        if(k===g.answer){ const pts=Math.max(30, Math.round(100-(Date.now()-t0)/100)); score+=pts; right++; b.classList.add('right'); beep('ok'); }
+        else { b.classList.add('wrong'); all[g.answer].classList.add('right'); beep('no'); }
+        $('#gs').textContent=score;
+        $('#fact').innerHTML=`<div class="note">${g.fact}</div><div class="row" style="margin-top:12px"><span class="spacer"></span><button class="btn y" id="gn">${i<GUESS.length-1?'다음 문제 ➜':'결과 보기'}</button></div>`;
+        speak(o.split(' – ')[0]);
+        $('#gn').onclick=()=>{ i++; i<GUESS.length ? q() : end(); };
+      };
+      $('#ch').appendChild(b);
+    });
+  };
+  const end = ()=>{
+    S.s1 = {done:true, score:Math.max(score,S.s1.score||0), right:Math.max(right,S.s1.right||0)}; save(); renderPills(); beep('win');
+    app.innerHTML = header(1)+`<div class="card center"><h2 style="font-size:34px">🎉 ${right} / ${GUESS.length} 정답!</h2>
+      <p class="stars">${'⭐'.repeat(right)}</p><p style="font-size:20px">점수: <b>${score}</b>점</p>
+      <p class="ko">마지막 탈것 <b>툭툭</b>을 타고 오늘의 이야기 속으로 들어가 봐요.</p>
+      <button class="btn g" id="g0">다시 하기</button></div>`+nextBtn(1);
+    $('#g0').onclick=()=>{ i=0;score=0;right=0;q(); };
+  };
+  intro();
+}
+
+/* =========================================================
+   8. 2단계 Line Detective
+   ========================================================= */
+function stage2(){
+  let i = S.s2.done ? 0 : (S.s2.idx||0);
+  let right = S.s2.done ? 0 : (S.s2.right||0);
+  const q = ()=>{
+    const L=LINES[i];
+    const bub = (side)=>{
+      const text = side==='a'?L.aText:L.bText; const p = side==='a'?L.a:L.b;
+      return `<div class="who"><div class="bubble ${text?'':'blank'}" id="bub${side}">${text?esc(text):'? ? ?'}</div><div class="face">${p.who}</div>${p.name}</div>`;
+    };
+    app.innerHTML = header(2)+`<div class="card">
+      <div class="row"><b>장면 ${i+1} / ${LINES.length}</b><span class="spacer"></span><span>🔎 ${right}</span></div>
+      <p class="ko" style="font-size:18px;margin-top:6px">${L.ko}</p>
+      <div class="scene">${bub('a')}${bub('b')}</div>
+      <p class="center" style="font-weight:800">빈 말풍선에 들어갈 말은?</p>
+      <div class="choices" id="ch"></div><div id="after"></div></div>`;
+    const other = L.blank==='a'?L.bText:L.aText;
+    // 이미 있는 말풍선은 먼저 들려줌
+    setTimeout(()=>speak(other),300);
+    let tries=0;
+    shuffle(L.opts.map((o,k)=>({o,k}))).forEach(({o,k})=>{
+      const b=document.createElement('button'); b.className='choice'; b.textContent=show(o);
+      b.onclick=async()=>{
+        if(k===L.answer){
+          if(tries===0) right++;
+          [...$('#ch').children].forEach(x=>x.disabled=true); b.classList.add('right'); beep('ok');
+          const bb=$('#bub'+L.blank); bb.classList.remove('blank'); bb.textContent=show(o);
+          S.s2.idx=i; S.s2.right=right; save();
+          $('#after').innerHTML=`<div class="note center" style="margin-top:14px">🎧 듣고 따라 말해 봐요! (건너뛰어도 돼요)</div><div id="sp"></div>
+            <div class="row" style="margin-top:10px"><span class="spacer"></span><button class="btn y" id="nx">${i<LINES.length-1?'다음 장면 ➜':'완료!'}</button></div>`;
+          speak(o);
+          speakTask($('#sp'), o, {failLimit:2}).then(()=>{});
+          $('#nx').onclick=()=>{ i++; if(i<LINES.length){ S.s2.idx=i; save(); q(); } else end(); };
+        } else { tries++; b.classList.add('wrong'); b.disabled=true; beep('no'); }
+      };
+      $('#ch').appendChild(b);
+    });
+  };
+  const end=()=>{
+    S.s2={done:true,right,idx:0}; save(); renderPills(); beep('win');
+    app.innerHTML = header(2)+`<div class="card center"><h2 style="font-size:32px">🔎 탐정 성공!</h2>
+      <p style="font-size:20px">한 번에 맞힌 장면: <b>${right} / ${LINES.length}</b></p>
+      <p class="ko">이제 이 문장들을 직접 말해서 툭툭을 운전해 볼까요?</p><button class="btn g" id="re">다시 하기</button></div>`+nextBtn(2);
+    $('#re').onclick=()=>{ i=0; right=0; S.s2.idx=0; q(); };
+  };
+  q();
+}
+
+/* =========================================================
+   9. 3단계 Speak & Ride
+   ========================================================= */
+function stage3(){
+  let i = S.s3.done ? MISSIONS.length : (S.s3.idx||0);
+  const road = ()=>{
+    const pos = k => 6 + k*(88/(MISSIONS.length));
+    return `<div class="road"><div class="lane"></div>
+      ${MISSIONS.map((m,k)=>`<div class="dot ${k<i?'done':''}" style="left:${pos(k+1)}%">${k+1}</div>`).join('')}
+      <div class="car" id="car" style="left:${pos(Math.min(i,MISSIONS.length))}%">${W(TUK)}</div></div>`;
+  };
+  const q = ()=>{
+    if(i>=MISSIONS.length) return end();
+    const m=MISSIONS[i];
+    app.innerHTML = header(3)+`<div class="card">${road()}
+      <div class="row"><b>미션 ${i+1} / ${MISSIONS.length}</b><span class="spacer"></span><span class="stars">${'⭐'.repeat(S.s3.stars||0)}</span></div>
+      <p style="font-size:22px;font-weight:800;margin:10px 0" class="center">🎯 ${m.ko}</p>
+      <p class="center ko">문장이 흐리게 보여요. 먼저 스스로 말해 보고, 어려우면 눌러서 확인해요.</p>
+      <div id="sp"></div></div>`;
+    speakTask($('#sp'), m.t, {failLimit:2, hide:true, onAlt:(done)=>{ blockTask($('#sp'), m.t).then(()=>done()); }})
+      .then(async how=>{
+        S.s3.stars=(S.s3.stars||0)+(how==='mic'?2:1); i++; S.s3.idx=i; save();
+        const car=$('#car'); if(car){ beep('horn'); car.style.left=(6+i*(88/MISSIONS.length))+'%'; }
+        await sleep(1100); q();
+      });
+  };
+  const end=()=>{
+    S.s3.done=true; S.s3.idx=MISSIONS.length; save(); renderPills(); beep('win');
+    app.innerHTML = header(3)+`<div class="card center">${road()}
+      <h2 style="font-size:32px">🪪 툭툭 운전면허 발급!</h2>
+      <div style="max-width:420px;margin:14px auto;border:3px solid var(--ink);border-radius:14px;padding:14px;background:#fff7da;text-align:left;font-size:18px">
+        <b>TUK-TUK DRIVER LICENSE</b><br>Name: ${esc(S.name)}<br>Class: ${esc(S.cls)}<br>Stars: ${'⭐'.repeat(Math.min(12,S.s3.stars||0))}</div>
+      <button class="btn g" id="re">다시 운전하기</button></div>`+nextBtn(3);
+    $('#re').onclick=()=>{ i=0; S.s3.idx=0; S.s3.stars=0; S.s3.done=false; save(); q(); };
+  };
+  q();
+}
+
+/* =========================================================
+   10. 4단계 World Ride Tour (가이드 캐릭터와 1:1 대화)
+   ========================================================= */
+function stage4(){
+  const map = ()=>{
+    const n=S.s4.stamps.length;
+    app.innerHTML = header(4)+`<div class="card">
+      <div class="row"><b>🛂 여권 도장 ${n} / 6</b><span class="spacer"></span>${n>=6?`<button class="btn p" id="drv">🛺 보너스: 툭툭 기사 모드 (${S.s4.driver||0}/3)</button>`:''}</div>
+      <p class="ko">가고 싶은 곳을 눌러요. 가이드에게 영어로 묻고, 잘 듣고, 도장을 받아요!</p>
+      <div class="map" style="margin-top:12px">${STATIONS.map(st=>`
+        <button class="station" data-id="${st.id}">${ART[st.id]}<div>${show(st.place).replace(/^the /,'')}</div><div class="flag">${st.flag}</div>
+        ${S.s4.stamps.includes(st.id)?'<div class="stamp">VISITED</div>':''}</button>`).join('')}</div>
+      <div class="note">📸 사진 촬영 가능 여부는 이 게임에서 정한 규칙이에요. 실제 장소의 규칙과 다를 수 있어요.</div></div>`+(n>=6?nextBtn(4):'');
+    app.querySelectorAll('.station').forEach(b=>b.onclick=()=>{ beep('click'); visit(STATIONS.find(s=>s.id===b.dataset.id)); });
+    const d=$('#drv'); if(d) d.onclick=driver;
+  };
+
+  async function visit(st){
+    const art = st.art==='the'?'the':st.art;
+    const lineRide = `Please take ${art==='the'?'the':art} ${st.rideName} and get off at ${st.stop}.`;
+    const placeT = `Excuse me, how can I get to {${st.place}}?`;
+    app.innerHTML = header(4)+`<div class="card"><div class="npcbox">
+      <div class="art">${ART[st.id]}<div class="center" style="font-weight:800;margin-top:6px">${show(st.place)}<br><span class="flag">${st.flag}</span></div>
+        <div class="center" style="font-size:54px;margin-top:8px">🧑🏽‍💼</div><div class="center ko">Guide</div></div>
+      <div id="flow"></div></div>
+      <div class="row" style="margin-top:12px"><button class="btn g" id="back">← 지도로</button></div></div>`;
+    $('#back').onclick=map;
+    const flow=$('#flow');
+    const stepHead=(n,t)=>`<div class="step">STEP ${n} / 4</div><h3 style="font-size:22px;margin-bottom:6px">${t}</h3>`;
+
+    // STEP 1: 길 묻기 (말하기 → 실패 시 문장 고르기)
+    flow.innerHTML = stepHead(1,'가이드에게 가는 길을 물어보세요')+`<div class="ko">🎤 Excuse me, how can I get to ...?</div><div id="sp"></div>`;
+    await speakTask($('#sp'), placeT, {failLimit:2, onAlt:(done)=>pickSentence($('#sp'), placeT, [`Who built {${st.place}}?`, 'Can I take pictures here?'], done)});
+
+    // STEP 2: 교통수단 듣고 고르기
+    const rides = shuffle([st.ride, ...shuffle(Object.keys(RIDE_KO).filter(r=>r!==st.ride)).slice(0,3)]);
+    flow.innerHTML = stepHead(2,'가이드의 대답을 잘 듣고, 무엇을 타야 하는지 골라요')+`
+      <div class="scene" style="justify-content:flex-start"><div class="bubble npc" id="nb">🔊 …</div></div>
+      <div class="row"><button class="btn g" id="again">🔊 다시 듣기</button><button class="btn g" id="cc">💬 자막 보기</button></div>
+      <div class="choices c4" id="ch"></div><div class="feedback" id="fb"></div>`;
+    const nb=$('#nb'); const play=()=>speak(lineRide,{pitch:1.1});
+    $('#again').onclick=play; $('#cc').onclick=()=>{ nb.textContent=lineRide; S.cc=(S.cc||0)+1; save(); };
+    await play();
+    await new Promise(res=>{
+      rides.forEach(r=>{
+        const b=document.createElement('button'); b.className='choice icon'; b.innerHTML=ART[r]+`<div>${RIDE_KO[r]}</div>`;
+        b.onclick=async()=>{ if(r===st.ride){ b.classList.add('right'); beep('ok'); nb.textContent=lineRide; [...$('#ch').children].forEach(x=>x.disabled=true); await sleep(1200); res(); } else { b.classList.add('wrong'); beep('no'); $('#fb').className='feedback no'; $('#fb').textContent='다시 들어 보세요! 🔊'; } };
+        $('#ch').appendChild(b);
+      });
+    });
+
+    // STEP 3: 누가 지었나요?
+    flow.innerHTML = stepHead(3,'누가 지었는지 물어보세요')+`<div id="sp"></div>`;
+    await speakTask($('#sp'), 'Who built it?', {failLimit:2, onAlt:(done)=>pickSentence($('#sp'),'Who built it?',['How was your day?','Yes, you can.'],done)});
+    const builders = shuffle([st.builder, ...shuffle(STATIONS.filter(s=>s.id!==st.id).map(s=>s.builder)).slice(0,2)]);
+    flow.innerHTML = stepHead(3,'가이드의 대답: 누가 지었나요?')+`
+      <div class="scene" style="justify-content:flex-start"><div class="bubble npc" id="nb">🔊 …</div></div>
+      <div class="row"><button class="btn g" id="again">🔊 다시 듣기</button><button class="btn g" id="cc">💬 자막 보기</button></div>
+      <div class="choices" id="ch"></div><div class="feedback" id="fb"></div>`;
+    const bLine = `${st.builderSay} did.`;
+    const play2=()=>speak(bLine,{pitch:1.1}); $('#again').onclick=play2; $('#cc').onclick=()=>{ $('#nb').textContent=`${st.builder} did.`; S.cc=(S.cc||0)+1; save(); };
+    await play2();
+    await new Promise(res=>{
+      builders.forEach(bd=>{
+        const b=document.createElement('button'); b.className='choice'; b.textContent=bd;
+        b.onclick=async()=>{ if(bd===st.builder){ b.classList.add('right'); beep('ok'); $('#nb').textContent=`${st.builder} did.`; [...$('#ch').children].forEach(x=>x.disabled=true); await sleep(1000); res(); } else { b.classList.add('wrong'); beep('no'); $('#fb').className='feedback no'; $('#fb').textContent='다시 들어 보세요! 🔊'; } };
+        $('#ch').appendChild(b);
+      });
+    });
+
+    // STEP 4: 사진 찍어도 되나요?
+    flow.innerHTML = stepHead(4,'여기서 사진을 찍어도 되는지 물어보세요')+`<div id="sp"></div>`;
+    await speakTask($('#sp'), 'Can I take pictures here?', {failLimit:2, onAlt:(done)=>pickSentence($('#sp'),'Can I take pictures here?',['Who built it?','It was so much fun.'],done)});
+    const pLine = st.photo ? 'Yes, you can.' : "No, you can't. Sorry.";
+    flow.innerHTML = stepHead(4,'가이드의 대답을 듣고 알맞게 행동해요')+`
+      <div class="scene" style="justify-content:flex-start"><div class="bubble npc" id="nb">🔊 …</div></div>
+      <div class="row"><button class="btn g" id="again">🔊 다시 듣기</button><button class="btn g" id="cc">💬 자막 보기</button></div>
+      <div class="choices c2" id="ch"></div><div class="feedback" id="fb"></div>`;
+    const play3=()=>speak(pLine,{pitch:1.1}); $('#again').onclick=play3; $('#cc').onclick=()=>{ $('#nb').textContent=pLine; S.cc=(S.cc||0)+1; save(); };
+    await play3();
+    await new Promise(res=>{
+      [['📸 사진 찍기', true],['🙇 "Okay, sorry!" 하고 넘어가기', false]].forEach(([label,val])=>{
+        const b=document.createElement('button'); b.className='choice center'; b.textContent=label;
+        b.onclick=async()=>{
+          if(val===st.photo){
+            b.classList.add('right'); [...$('#ch').children].forEach(x=>x.disabled=true); $('#nb').textContent=pLine;
+            if(val){ const f=document.createElement('div'); f.className='flash'; document.body.appendChild(f); beep('click'); setTimeout(()=>f.remove(),700); if(!S.s4.photos.includes(st.id)) S.s4.photos.push(st.id); }
+            else { await speak('Okay, sorry!'); }
+            await sleep(900); res();
+          } else { b.classList.add('wrong'); beep('no'); $('#fb').className='feedback no'; $('#fb').textContent='가이드의 대답을 다시 들어 보세요! 🔊'; }
+        };
+        $('#ch').appendChild(b);
+      });
+    });
+
+    // 도장!
+    if(!S.s4.stamps.includes(st.id)) S.s4.stamps.push(st.id);
+    save(); renderPills();
+    const bs=document.createElement('div'); bs.className='bigstamp'; bs.textContent='VISITED'; document.body.appendChild(bs); beep('stamp');
+    setTimeout(()=>bs.remove(),1400);
+    flow.innerHTML = `<h3 style="font-size:26px">🎉 도장 획득!</h3>
+      <div class="note" style="font-size:17px">📖 ${st.ko}</div>
+      <p style="font-size:18px;line-height:1.8;margin-top:12px">✔ I took ${art==='the'?'the':art} <b>${st.rideName}</b>.<br>✔ <b>${st.builder}</b> built it.<br>✔ ${st.photo?'I took pictures. 📸':'I didn\'t take pictures. 🙅'}</p>
+      <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn big y" id="tomap">지도로 돌아가기 🗺️</button></div>`;
+    $('#tomap').onclick=()=>{ if(S.s4.stamps.length===6){ beep('win'); } map(); };
+  }
+
+  // 대체 수단: 알맞은 문장 고르기
+  function pickSentence(host, right, wrongs, done){
+    host.innerHTML = `<div class="ko">알맞은 문장을 고르고, 소리 내어 읽어 봐요.</div><div class="choices" id="ps"></div>`;
+    shuffle([right,...wrongs]).forEach(o=>{
+      const b=document.createElement('button'); b.className='choice'; b.textContent=show(o);
+      b.onclick=async()=>{ if(o===right){ b.classList.add('right'); beep('ok'); await speak(o); done(); } else { b.classList.add('wrong'); beep('no'); } };
+      host.querySelector('#ps').appendChild(b);
+    });
+  }
+
+  // 보너스: 기사 모드 — 관광객이 묻고, 내가 안내
+  async function driver(){
+    const round = async (k)=>{
+      const st = shuffle(STATIONS)[0];
+      const art = st.art==='the'?'the':st.art;
+      const target = `Please take ${art} ${st.rideName} and get off at {${st.stop}}.`;
+      app.innerHTML = header(4)+`<div class="card"><h3 style="font-size:24px">🛺 툭툭 기사 모드 ${k}/3</h3>
+        <p class="ko">이번엔 내가 안내할 차례! 관광객의 질문을 듣고, 그림을 보고 안내해요.</p>
+        <div class="scene"><div class="who"><div class="bubble npc">Excuse me, how can I get to ${show(st.place)}?</div><div class="face">🧳</div>Tourist</div></div>
+        <div class="row" style="justify-content:center;gap:24px"><div style="width:180px">${ART[st.ride]}<div class="center"><b>${st.rideName}</b></div></div><div style="font-size:30px">➜</div><div style="width:180px">${ART[st.id]}<div class="center"><b>${st.stop}</b></div></div></div>
+        <div id="sp"></div><div class="row"><button class="btn g" id="back">← 지도로</button></div></div>`;
+      $('#back').onclick=map;
+      await speak(`Excuse me, how can I get to ${st.placeSay}?`,{pitch:1.25});
+      await speakTask($('#sp'), target, {failLimit:2, hide:true, onAlt:(done)=>blockTask($('#sp'),target).then(done)});
+      await speak('Thank you!',{pitch:1.25});
+    };
+    for(let k=(S.s4.driver||0)+1;k<=3;k++){ await round(k); S.s4.driver=k; save(); }
+    beep('win'); toast('🏆 최고의 툭툭 기사!'); map();
+  }
+  map();
+}
+
+/* =========================================================
+   11. 5단계 Trip Postcard
+   ========================================================= */
+function stage5(){
+  const pool = S.s4.stamps.length ? STATIONS.filter(s=>S.s4.stamps.includes(s.id)) : STATIONS;
+  const pc = S.s5.pc || {to:'Mom', st:pool[0].id, feel:''};
+  const draw=()=>{
+    const st = STATIONS.find(s=>s.id===pc.st) || pool[0];
+    const art = st.art==='the'?'the':st.art;
+    app.innerHTML = header(5)+`<div class="card">
+      <p class="ko" style="font-size:17px">가장 기억에 남는 여행지를 골라 엽서를 완성해요. 마지막 문장은 직접 써요!</p>
+      <div class="postcard" style="margin-top:12px">
+        <div class="pic">${ART[st.id]}</div>
+        <div class="txt">
+          Dear <select id="pTo">${['Mom','Dad','my friend','my teacher','Grandma'].map(x=>`<option ${x===pc.to?'selected':''}>${x}</option>`).join('')}</select>,<br>
+          I went to <select id="pSt">${pool.map(s=>`<option value="${s.id}" ${s.id===st.id?'selected':''}>${show(s.place)}</option>`).join('')}</select>.<br>
+          I took ${art} <b>${st.rideName}</b>.<br>
+          <b>${st.builder}</b> built it.<br>
+          <input id="pFeel" maxlength="60" placeholder="It was so much fun!" value="${esc(pc.feel)}"><br>
+          From, <b>${esc(S.name)}</b>
+        </div>
+      </div>
+      <div class="note">💡 마지막 문장 예시: It was so much fun. / It was amazing. / I want to go there again.</div>
+      <div class="row" style="margin-top:14px"><button class="btn g" id="pRead">🔊 엽서 읽어 주기</button><span class="spacer"></span>
+      <button class="btn big y" id="pSend">${S.s5.done?'다시 보내기 📮':'엽서 보내기 📮'}</button></div>
+      <div id="pOk"></div></div>`;
+    $('#pTo').onchange=e=>{pc.to=e.target.value;};
+    $('#pSt').onchange=e=>{pc.st=e.target.value; pc.feel=$('#pFeel').value; draw();};
+    $('#pFeel').oninput=e=>{pc.feel=e.target.value;};
+    const text=()=>`Dear ${pc.to}, I went to ${st.placeSay}. I took ${art} ${st.rideName}. ${st.builderSay} built it. ${pc.feel||'It was so much fun!'} From, ${S.name}.`;
+    $('#pRead').onclick=()=>speak(text());
+    $('#pSend').onclick=()=>{
+      if(!$('#pFeel').value.trim()){ $('#pFeel').style.borderColor='var(--bad)'; $('#pFeel').focus(); toast('마지막 문장을 직접 써 주세요! ✍️'); return; }
+      pc.feel=$('#pFeel').value.trim();
+      S.s5={done:true, pc:{...pc}}; save(); renderPills(); beep('win');
+      $('#pOk').innerHTML=`<div class="note center" style="font-size:19px;margin-top:12px">📮 엽서를 보냈어요! ${ONLINE?'선생님 화면에 도착했어요.':''}<br><b>How was your trip?</b> 🔊로 들어 보고, 내 엽서를 소리 내어 읽어 봐요.</div>`;
+    };
+  };
+  draw();
+}
+
+/* =========================================================
+   12. 교사 현황판
+   ========================================================= */
+function teacher(){
+  $('#topbar').classList.add('hidden');
+  const pin = store.get('wrt_tpin','');
+  let cls = store.get('wrt_tcls','6-1');
+  if(!ONLINE){
+    app.innerHTML = `<div class="card" style="max-width:640px;margin:40px auto"><h2>교사용 현황판</h2>
+      <p style="font-size:17px;line-height:1.7">아직 구글 시트가 연결되지 않았어요.<br>파일 맨 위의 <code>API_URL</code>에 Apps Script 웹앱 주소를 넣으면 실시간 현황판이 켜집니다.<br>(연결 전에는 학생 화면의 모든 단계가 열린 상태로 동작해요.)</p>
+      <a href="#" class="btn g" style="display:inline-block;text-decoration:none">학생 화면으로</a></div>`;
+    return;
+  }
+  if(!pin){
+    app.innerHTML = `<div class="card" style="max-width:420px;margin:60px auto"><h2>교사 로그인</h2>
+      <label class="l">PIN (Apps Script에 정한 번호)</label><input class="inp" id="tp" type="password">
+      <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn y" id="tgo">들어가기</button></div><div class="feedback no" id="tfb"></div></div>`;
+    $('#tgo').onclick=async()=>{ const p=$('#tp').value.trim(); const r=await api('GET',{action:'dash',cls,pin:p}); if(r && !r.error){ store.set('wrt_tpin',p); teacher(); } else $('#tfb').textContent = r&&r.error==='pin'?'PIN이 맞지 않아요.':'연결에 실패했어요. URL과 배포 설정을 확인하세요.'; };
+    return;
+  }
+  let data={stage:0,students:[],acks:{},now:Date.now()}, tmr=null, tEnd=0, poll=null;
+  app.innerHTML = `
+    <div class="row" style="margin:6px 0 12px"><h1 style="font-size:30px">🛺 World Ride Tour 현황판</h1><span class="spacer"></span>
+      <select class="inp" id="tc" style="width:140px">${[1,2,3,4,5,6,7,8].map(c=>`<option value="6-${c}" ${('6-'+c)===cls?'selected':''}>6-${c}</option>`).join('')}</select>
+      <button class="btn g" id="tout">로그아웃</button></div>
+    <div class="card">
+      <div class="row"><b style="font-size:18px">🚦 단계 열기</b><span class="ko">학생들은 열린 단계까지만 이동할 수 있어요.</span></div>
+      <div class="t-grid" style="margin-top:10px" id="tst"></div>
+      <div class="row" style="margin-top:14px">
+        <b style="font-size:18px">⏱ 타이머</b>
+        ${[3,5,8,15].map(m=>`<button class="btn g" data-m="${m}">${m}분</button>`).join('')}
+        <div class="bigtimer" id="tt">--:--</div>
+        <button class="btn g" id="tstop">■</button>
+        <button class="btn y" id="thorn">📯 툭툭 경적</button>
+      </div>
+    </div>
+    <div class="kpi" id="kpi"></div>
+    <div class="card" style="padding:0;overflow:auto;max-height:60vh"><table class="t"><thead><tr>
+      <th>번호</th><th>이름</th><th>접속</th><th>지금</th><th>① 퀴즈</th><th>② 탐정</th><th>③ 말하기</th><th>④ 도장</th><th>⑤ 엽서</th><th>🎤 성공</th><th>💬 자막</th><th>🙋</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="card" style="margin-top:14px"><div class="row"><b style="font-size:18px">📮 도착한 엽서</b><span class="ko">누르면 TV에 크게 보여요.</span></div><div class="pcwall" id="pw" style="margin-top:10px"></div></div>
+    <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn g" id="treset">이 반 기록 초기화</button></div>`;
+  const stLabels=['⏸ 대기','1 Guess','2 Line','3 Speak','4 Tour','5 Postcard'];
+  const renderStages=()=>{ $('#tst').innerHTML = stLabels.map((l,k)=>`<button class="t-stage ${data.stage===k?'on':''}" data-k="${k}">${l}</button>`).join('');
+    $('#tst').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ const k=+b.dataset.k; data.stage=k; renderStages(); await api('POST',null,{action:'setStage',cls,stage:k,pin}); beep('click'); }); };
+  const render=()=>{
+    renderStages();
+    const now=data.now||Date.now(), list=[...data.students].sort((a,b)=>a.num-b.num);
+    const on = list.filter(s=>now-s.updated<40000).length;
+    const cnt=f=>list.filter(f).length;
+    $('#kpi').innerHTML = [
+      ['접속', `${on}/${list.length}`], ['① 완료', cnt(s=>s.data.s1&&s.data.s1.done)], ['② 완료', cnt(s=>s.data.s2&&s.data.s2.done)],
+      ['③ 면허', cnt(s=>s.data.s3&&s.data.s3.done)], ['④ 도장 6개', cnt(s=>s.data.s4&&s.data.s4.stamps.length>=6)], ['⑤ 엽서', cnt(s=>s.data.s5&&s.data.s5.done)]
+    ].map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('');
+    const ack=data.acks||{};
+    $('#tb').innerHTML = list.map(s=>{
+      const d=s.data||{}, help = d.help && d.help>(ack[s.key]||0);
+      return `<tr class="${help?'help':''}"><td>${s.num}</td><td style="text-align:left">${esc(s.name)}</td>
+      <td><span class="on-dot ${now-s.updated<40000?'on':''}"></span></td><td>${s.cur?s.cur+'단계':'대기'}</td>
+      <td>${d.s1&&d.s1.done?`${d.s1.right}/4`:'–'}</td><td>${d.s2?(d.s2.done?`✓ ${d.s2.right}/6`:`${d.s2.idx||0}/6`):'–'}</td>
+      <td>${d.s3?(d.s3.done?'🪪':`${d.s3.idx||0}/6`):'–'}</td>
+      <td class="sdots">${STATIONS.map(st=>`<span class="${d.s4&&d.s4.stamps.includes(st.id)?'y':''}" title="${show(st.place)}"></span>`).join('')}${d.s4&&d.s4.driver?` 🛺${d.s4.driver}`:''}</td>
+      <td>${d.s5&&d.s5.done?'📮':'–'}</td><td>${d.speakOk||0}</td><td>${d.cc||0}</td>
+      <td>${help?`<button class="btn y" style="padding:4px 10px;font-size:14px" data-ack="${s.key}">확인</button>`:''}</td></tr>`;
+    }).join('') || `<tr><td colspan="12" style="padding:30px;color:var(--sub)">아직 접속한 학생이 없어요.</td></tr>`;
+    $('#tb').querySelectorAll('[data-ack]').forEach(b=>b.onclick=async()=>{ const k=b.dataset.ack; data.acks[k]=Date.now(); render(); await api('POST',null,{action:'ack',key:k,pin}); });
+    const pcs=list.filter(s=>s.data.s5&&s.data.s5.done&&s.data.s5.pc);
+    $('#pw').innerHTML = pcs.map(s=>{ const pc=s.data.s5.pc, st=STATIONS.find(x=>x.id===pc.st)||STATIONS[0];
+      return `<div class="pcmini" data-k="${s.key}"><b>${s.num}. ${esc(s.name)}</b> → ${show(st.place)}<br>"${esc(pc.feel)}"</div>`; }).join('') || '<span class="ko">아직 없어요.</span>';
+    $('#pw').querySelectorAll('.pcmini').forEach(b=>b.onclick=()=>tv(list.find(s=>s.key===b.dataset.k)));
+  };
+  const tv = s=>{
+    const pc=s.data.s5.pc, st=STATIONS.find(x=>x.id===pc.st)||STATIONS[0], art=st.art;
+    const o=document.createElement('div'); o.id='tvOverlay';
+    o.innerHTML=`<div class="postcard"><div class="pic">${ART[st.id]}</div><div class="txt">Dear ${esc(pc.to)},<br>I went to ${show(st.place)}.<br>I took ${art} ${st.rideName}.<br>${st.builder} built it.<br><b>${esc(pc.feel)}</b><br>From, ${esc(s.name)}</div></div>`;
+    o.onclick=()=>o.remove(); document.body.appendChild(o);
+  };
+  const load=async()=>{ const r=await api('GET',{action:'dash',cls,pin}); if(r && !r.error){ data=r; render(); } else if(r && r.error==='pin'){ store.del('wrt_tpin'); teacher(); } };
+  $('#tc').onchange=e=>{ cls=e.target.value; store.set('wrt_tcls',cls); load(); };
+  $('#tout').onclick=()=>{ store.del('wrt_tpin'); clearInterval(poll); teacher(); };
+  app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ tEnd=Date.now()+(+b.dataset.m)*60000; beep('click'); });
+  $('#tstop').onclick=()=>{ tEnd=0; $('#tt').textContent='--:--'; };
+  $('#thorn').onclick=()=>beep('horn');
+  setInterval(()=>{ if(!tEnd) return; const left=Math.max(0,tEnd-Date.now()); const m=Math.floor(left/60000), s=Math.floor(left%60000/1000);
+    $('#tt').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; $('#tt').style.color= left<30000?'var(--bad)':'';
+    if(left===0){ tEnd=0; beep('horn'); setTimeout(()=>beep('horn'),700); } },250);
+  $('#treset').onclick=async()=>{ const ok=await dialog(`<b>${cls}</b> 반의 모든 학생 기록을 지울까요?<br>되돌릴 수 없어요.`,[['취소',false,'g'],['지우기',true,'']]); if(ok){ await api('POST',null,{action:'reset',cls,pin}); load(); } };
+  load(); poll=setInterval(load, 4000);
+}
+
+/* =========================================================
+   13. 시작
+   ========================================================= */
+function boot(){
+  if(location.hash==='#teacher') return teacher();
+  const last=store.get('wrt_last',null);
+  if(last){ const st=store.get(keyOf(last.cls,last.num),null); if(st && st.name){ S=st; if(ONLINE){ api('GET',{action:'config',cls:S.cls,key:`${S.cls}-${S.num}`}).then(r=>{ if(r&&typeof r.stage==='number'){ ALLOWED=r.stage; } startStudent(); }); return; } return startStudent(); } }
+  renderLogin();
+}
+window.addEventListener('hashchange', ()=>location.reload());
+// 다른 학생이 같은 기기를 쓸 때: 이름 옆을 길게 누르면 로그아웃
+document.addEventListener('DOMContentLoaded',()=>{});
+$('#me').addEventListener('dblclick', async ()=>{ const ok=await dialog('이 기기에서 로그아웃할까요?<br>(기록은 남아 있어요)',[['취소',false,'g'],['로그아웃',true,'']]); if(ok){ store.del('wrt_last'); location.reload(); } });
+boot();
+</script>
+</body>
+</html>
